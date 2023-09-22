@@ -1,0 +1,182 @@
+#第一小題
+create table STATION (
+STA_NUM numeric(4) primary key ,
+STA_NAME varchar(20) ,
+STA_PHONE varchar(15) ,
+STA_LOC varchar(10)) ;
+INSERT INTO STATION VALUES(
+1001, '空污監測站', '04-22053366', '台中市');
+INSERT INTO STATION VALUES(
+2001, '有毒氣體監測站', '04-3204578', '苗栗縣');
+INSERT INTO STATION VALUES(
+3001, '水質監測站', '04-732328', '南投縣');
+INSERT INTO STATION VALUES(
+4001, '土石流防災監測站', '07-326254', '高雄市');
+INSERT INTO STATION VALUES(
+4002, '地下水位觀測站', '04-539123', '南投縣');
+
+create table SENSOR (
+SEN_NUM numeric(5) primary key ,
+SEN_NAME varchar(30) not null ,
+SEN_BRAND varchar(20) ,
+SEN_OBJECT varchar(50) ,
+STA_NUM numeric(4) ,
+constraint STA_SEN_FK foreign key (STA_NUM) references station(STA_NUM) ON DELETE SET NULL) ;
+
+INSERT INTO SENSOR VALUES(
+101, 'Aerosol Detector', 'AAA', '空氣懸浮微粒', 1001 );
+INSERT INTO SENSOR VALUES(
+102, 'CO Detector', 'BBB', '一氧化碳濃度', 2001);
+INSERT INTO SENSOR VALUES(
+103, 'LHL Sensor', 'CCC', '揮發性有毒物質', 2001);
+INSERT INTO SENSOR VALUES(
+104, 'Dissolved Oxygen Meter', 'DDD', '水中溶氧量', 3001);
+INSERT INTO SENSOR VALUES(
+105, 'Accellerator', null, '土石流加速度', 4001);
+INSERT INTO SENSOR VALUES(
+108, 'GW Level Meter', 'XXX', '地下水位', 4002);
+
+create table RISKDATA (
+RISK_TYPE varchar(2) not null ,
+RISK_DATE datetime default now() ,
+RISK_CONS numeric(9,2) not null ,
+SEN_NUM numeric(5) ,
+STA_NUM numeric(4) ,
+constraint SEN_RD_FK foreign key (SEN_NUM) references sensor(SEN_NUM) ,
+constraint STA_RD_FK foreign key (STA_NUM) references station(STA_NUM)) ;
+INSERT INTO RISKDATA VALUES(
+'pm','2021/12/28 15:20:35',500,101,1001);
+INSERT INTO RISKDATA VALUES(
+'co','2021/11/15 12:32:46',25.1,102,2001);
+INSERT INTO RISKDATA VALUES(
+'vo','2022/1/3 4:40:20',15.2,103,2001);
+INSERT INTO RISKDATA VALUES(
+'pm','2021/4/2 10:30:59',450,101,1001);
+INSERT INTO RISKDATA VALUES(
+'vo','2021/8/8 3:39:22',36.4,103,3001);
+INSERT INTO RISKDATA VALUES(
+'wo','2021/2/28 7:10:59',80.3,104,3001);
+INSERT INTO RISKDATA VALUES(
+'ac','2021/6/29 18:22:30',1.25,105,4001);
+INSERT INTO RISKDATA VALUES(
+'gw','2021/10/8 21:12:16',150,108,4002);
+
+create table RISKLEVEL (
+RISK_LEVEL numeric(1) ,
+RISK_TYPE varchar(2) ,
+LOCONS numeric(9,2) not null ,
+HICONS numeric(9,2) not null ,
+constraint RL_PK primary key (RISK_LEVEL , RISK_TYPE) ) ;
+
+INSERT INTO RISKLEVEL VALUES(
+1,'pm',0,29.99);
+INSERT INTO RISKLEVEL VALUES(
+2,'pm',30,79.99);
+INSERT INTO RISKLEVEL VALUES(
+3,'pm',80,999.99);
+INSERT INTO RISKLEVEL VALUES(
+1,'co',0,19.99);
+INSERT INTO RISKLEVEL VALUES(
+2,'co',20,39.99);
+INSERT INTO RISKLEVEL VALUES(
+3,'co',40,99.99);
+INSERT INTO RISKLEVEL VALUES(
+1,'vo',0,9.99);
+INSERT INTO RISKLEVEL VALUES(
+2,'vo',10,19.99);
+INSERT INTO RISKLEVEL VALUES(
+3,'vo',20,99.99);
+INSERT INTO RISKLEVEL VALUES(
+1,'wo',80,100);
+INSERT INTO RISKLEVEL VALUES(
+2,'wo',40,79.99);
+INSERT INTO RISKLEVEL VALUES(
+3,'wo',0,39.99);
+INSERT INTO RISKLEVEL VALUES(
+1,'ac',0,9.99);
+INSERT INTO RISKLEVEL VALUES(
+2,'ac',10,19.99);
+INSERT INTO RISKLEVEL VALUES(
+3,'ac',20,29.99);
+INSERT INTO RISKLEVEL VALUES(
+1,'gw',0,999.99);
+INSERT INTO RISKLEVEL VALUES(
+2,'gw',1000,9999.99);
+INSERT INTO RISKLEVEL VALUES(
+3,'gw',10000,99999.99);
+#drop table sensor;
+#drop table station;
+#drop table risklevel;
+#drop table riskdata;
+
+#第二小題
+use mis111a ;
+alter table sensor 
+add (SEN_PRICE numeric(9,2) default 10000) ;
+alter table station 
+add unique (STA_PHONE) ;
+alter table station 
+modify STA_LOC varchar(10) not null ;
+alter table riskdata
+modify RISK_CONS numeric(12,3) null ;
+alter table risklevel 
+add check (LOCONS >= 0) ;
+
+
+#第三小題
+#第一次查詢
+select SEN_NUM , SEN_NAME , STA_NUM 
+from sensor
+where SEN_OBJECT like '%微粒%' or SEN_OBJECT like '%毒物%' or SEN_OBJECT like '%水%' ;
+#第二次查詢
+select STA_LOC
+from station
+where STA_NUM IN (select STA_NUM from sensor where SEN_OBJECT like '%微粒%' or SEN_OBJECT like '%毒物%' or SEN_OBJECT like '%水%') ;
+#第三次查詢
+select RISK_TYPE , RISK_CONS , RISK_DATE , SEN_NUM , STA_NUM
+from riskdata
+where STA_NUM IN (select STA_NUM from sensor where SEN_OBJECT like '%微粒%' or SEN_OBJECT like '%毒物%' or SEN_OBJECT like '%水%') 
+  and SEN_NUM IN (select SEN_NUM from sensor where SEN_OBJECT like '%微粒%' or SEN_OBJECT like '%毒物%' or SEN_OBJECT like '%水%')
+  and RISK_DATE between '2021-02-01' and '2021-04-30';
+
+SELECT * FROM riskdata ;
+SELECT * FROM sensor ;
+SELECT * FROM station ;
+
+#第四小題
+update station set
+STA_LOC = '彰化縣' 
+where STA_NAME = '空污監測站' ;
+
+update sensor set
+SEN_BRAND = '德州儀器公司' ,
+SEN_PRICE = 22000
+where STA_NUM IN (select STA_NUM from station where STA_NAME = '空污監測站');
+insert into riskdata (RISK_CONS,RISK_DATE,RISK_TYPE,STA_NUM)valueS(
+87.87 ,NOW() ,'vo',STA_NUM =(SELECT STA_NUM FROM STATION WHERE STA_NAME = '有毒氣體監測站') );
+
+#證明有做出條件(字典)
+use mis111a ;
+desc station ; 
+desc sensor ;
+desc riskdata ;
+desc risklevel ;
+#證明表格資料
+SELECT * FROM station ;
+SELECT * FROM sensor ;
+SELECT * FROM riskdata ;
+SELECT * FROM risklevel ;
+
+#證明有做出條件(欄位、限制)
+use information_schema ;
+SELECT constraint_name, constraint_type, table_name FROM table_constraints 
+WHERE table_name IN ('STATION','SENSOR','RISKDATA','RISKLEVEL');
+SELECT table_name, column_name, column_key FROM columns 
+WHERE table_name IN ('STATION','SENSOR','RISKDATA','RISKLEVEL');
+SELECT table_name, column_name, referenced_table_name, referenced_column_name FROM key_column_usage 
+WHERE table_name IN ('STATION','SENSOR','RISKDATA','RISKLEVEL');
+SELECT table_name, referenced_table_name, delete_rule FROM referential_constraints 
+WHERE table_name IN ('STATION','SENSOR','RISKDATA','RISKLEVEL');
+SELECT constraint_schema, constraint_name, check_clause FROM check_constraints 
+WHERE constraint_schema IN ('mis111a');
+
